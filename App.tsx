@@ -1,7 +1,6 @@
-
 import React, { useState, useCallback } from 'react';
 import { ResumeAnalysis } from './types';
-import { analyzeResume } from './services/geminiService';
+// import { analyzeResume } from './services/geminiService'; // ← この行は削除しました
 import ResumeInputForm from './components/ResumeInputForm';
 import AnalysisDisplay from './components/AnalysisDisplay';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -15,6 +14,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ▼▼▼ この関数を修正しました ▼▼▼
   const handleAnalyzeClick = useCallback(async () => {
     if (!resumeText.trim()) {
       setError("職務経歴書のテキストは空にできません。");
@@ -24,8 +24,25 @@ const App: React.FC = () => {
     setError(null);
     setAnalysisResult(null); 
     try {
-      const result = await analyzeResume(resumeText);
+      // サーバーAPIを呼び出す
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ resumeText: resumeText }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'サーバーで分析エラーが発生しました。');
+      }
+
+      // サーバーから返ってきたJSON文字列をJavaScriptオブジェクトに変換
+      const result: ResumeAnalysis = JSON.parse(data.result);
       setAnalysisResult(result);
+
     } catch (e: any) {
       setError(e.message || "分析中に予期せぬエラーが発生しました。");
       console.error("App.tsxでの分析エラー:", e);
@@ -33,6 +50,7 @@ const App: React.FC = () => {
       setIsLoading(false);
     }
   }, [resumeText]);
+  // ▲▲▲ この関数を修正しました ▲▲▲
 
   const handleClearText = useCallback(() => {
     setResumeText('');
@@ -88,7 +106,7 @@ const App: React.FC = () => {
 
       <footer className="text-center mt-12 sm:mt-16 py-6 border-t border-neutral-300">
         <p className="text-sm text-neutral-500">
-          Powered by Google Gemini API &copy; {new Date().getFullYear()} 株式会社morich
+          Powered by Google Gemini API © {new Date().getFullYear()} 株式会社morich
         </p>
       </footer>
     </div>

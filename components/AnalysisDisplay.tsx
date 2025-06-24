@@ -42,7 +42,7 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result }) => {
   const handleDownloadPdf = () => {
     // Basic error handling for font data placeholder
     // In a real app, this check might be more sophisticated or removed if font is guaranteed.
-    const fontDataPlaceholder = 'PLACEHOLDER_FOR_BASE64_ENCODED_NOTO_SANS_JP_REGULAR_TTF_DATA';
+
     if (typeof process === 'object' && process.env.NODE_ENV !== 'production') { // Example: show alert only in dev
         // This is a simplified check. In pdfService, NOTO_SANS_JP_REGULAR_BASE64 is checked.
         // A more robust solution involves ensuring the font is properly configured.
