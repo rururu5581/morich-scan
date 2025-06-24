@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { ResumeAnalysis } from './types';
-// import { analyzeResume } from './services/geminiService'; // ← この行は削除しました
 import ResumeInputForm from './components/ResumeInputForm';
 import AnalysisDisplay from './components/AnalysisDisplay';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -14,7 +13,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ▼▼▼ この関数を修正しました ▼▼▼
+  // ▼▼▼ この関数にデバッグ用の console.log を追加しました ▼▼▼
   const handleAnalyzeClick = useCallback(async () => {
     if (!resumeText.trim()) {
       setError("職務経歴書のテキストは空にできません。");
@@ -34,23 +33,35 @@ const App: React.FC = () => {
       });
 
       const data = await response.json();
+      
+      // 【デバッグログ1】サーバーから何が返ってきたか確認
+      console.log("サーバーからの応答データ:", data);
 
       if (!response.ok) {
         throw new Error(data.message || 'サーバーで分析エラーが発生しました。');
       }
 
+      // 【デバッグログ2】JSON.parseにかける文字列を確認
+      console.log("JSON.parseする対象:", data.result);
+
       // サーバーから返ってきたJSON文字列をJavaScriptオブジェクトに変換
       const result: ResumeAnalysis = JSON.parse(data.result);
+
+      // 【デバッグログ3】パースが成功したか、オブジェクトの中身を確認
+      console.log("パース後のオブジェクト:", result);
+
       setAnalysisResult(result);
 
     } catch (e: any) {
+      // 【デバッグログ4】エラーが発生した場合、その内容を確認
+      console.error("分析処理中にエラーが発生しました:", e);
       setError(e.message || "分析中に予期せぬエラーが発生しました。");
       console.error("App.tsxでの分析エラー:", e);
     } finally {
       setIsLoading(false);
     }
   }, [resumeText]);
-  // ▲▲▲ この関数を修正しました ▲▲▲
+  // ▲▲▲ ここまで ▲▲▲
 
   const handleClearText = useCallback(() => {
     setResumeText('');

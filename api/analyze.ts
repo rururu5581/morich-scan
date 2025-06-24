@@ -39,7 +39,8 @@ export default async function handler(
     const response = result.response;
     const responseText = response.text();
     // ▲▲▲ この部分を修正しました ▲▲▲
-    
+        // ▼▼▼ この行を追加 ▼▼▼
+    console.log("AIからの生の応答:", responseText); 
     // 成功したら、AIからの応答テキスト（JSON文字列）を返す
     res.status(200).json({ result: responseText });
 
