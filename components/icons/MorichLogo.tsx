@@ -1,0 +1,12 @@
+import React from 'react';
+
+const MorichLogo: React.FC<{ className?: string }> = ({ className }) => (
+  <img 
+    src="data:image/png;base64,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"
+    alt="株式会社morich ロゴ"
+    className={className}
+    style={{ height: '40px', width: 'auto' }}
+  />
+);
+
+export default MorichLogo;

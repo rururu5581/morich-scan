@@ -1,0 +1,5 @@
+{
+  "name": "morich profile scan（リクルーター向け）",
+  "description": "Gemini AIを使用して、リクルートエージェントが職務経歴書から主要情報を迅速に抽出し要約するためのAI搭載ツール。",
+  "requestFramePermissions": []
+}
