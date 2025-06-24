@@ -10,7 +10,6 @@ import ExclamationTriangleIcon from './icons/ExclamationTriangleIcon';
 import ChatBubbleLeftRightIcon from './icons/ChatBubbleLeftRightIcon';
 import DocumentArrowDownIcon from './icons/DocumentArrowDownIcon';
 
-
 // コンポーネントが受け取るPropsの型定義
 interface Props {
   result: ResumeAnalysis;
@@ -21,20 +20,12 @@ const AnalysisDisplay: React.FC<Props> = ({ result }) => {
   // PDF出力ボタンがクリックされたときの処理
   const handlePdfExport = async () => {
     try {
-      // --- デバッグログ ---
-      console.log("PDFエクスポート処理を開始します。");
       const doc = new jsPDF();
 
-      // --- ステップ1: 日本語フォントの読み込みと登録 ---
+      // --- フォントの読み込みと登録 ---
       const fontUrl = '/fonts/NotoSansJP-Regular.ttf';
-      console.log("読み込むフォントのURL:", fontUrl);
-      
       const response = await fetch(fontUrl);
-      console.log("フォントファイルのfetchレスポンス:", response);
-      if (!response.ok) {
-        throw new Error(`フォントの読み込みに失敗しました。Status: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`フォント読み込み失敗: ${response.status}`);
       const fontBlob = await response.blob();
       const fontData = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -42,49 +33,74 @@ const AnalysisDisplay: React.FC<Props> = ({ result }) => {
         reader.onerror = (error) => reject(error);
         reader.readAsDataURL(fontBlob);
       });
-      
       const fontBase64 = fontData.substring(fontData.indexOf(',') + 1);
       const fontName = 'NotoSansJP';
       doc.addFileToVFS('NotoSansJP-Regular.ttf', fontBase64);
       doc.addFont('NotoSansJP-Regular.ttf', fontName, 'normal');
-      console.log("jsPDFにフォントを登録しました:", fontName);
-      
-      // --- ステップ2: PDFコンテンツの描画 ---
       doc.setFont(fontName);
-      console.log("デフォルトフォントを", fontName, "に設定しました。");
 
-      // doc.text() は長いテキストを自動で折り返さないため、手動で分割する
-      const splitText = (text: string, maxWidth: number) => doc.splitTextToSize(text, maxWidth);
+      // --- PDFコンテンツの描画 ---
+      const leftMargin = 15;
+      const contentWidth = 180; // A4幅(210mm) - 左右マージン(15*2)
+      const yStep = 7;
+      const yLargeStep = 12;
+      let y = 20;
 
-      let y = 20; // 描画位置のY座標
-
-      doc.setFontSize(16);
-      doc.text("職務要約", 10, y);
-      y += 10;
-      doc.setFontSize(10);
-      doc.text(splitText(result.summary, 180), 15, y);
-      y += 30; // 適宜スペースを調整
-
-      doc.setFontSize(16);
-      doc.text("保有スキル", 10, y);
-      y += 10;
-      doc.setFontSize(10);
-      result.skills.forEach(skill => {
-        doc.text(`- ${skill}`, 15, y);
-        y += 7;
-      });
-      y += 10;
-
-      // ... 他の項目も同様に追加していく ...
-      // strength, potential_concerns なども上記のように描画ロジックを追加してください。
+      const splitText = (text: string) => doc.splitTextToSize(text, contentWidth);
       
-      // --- ステップ3: PDFの保存 ---
+      doc.setFontSize(20);
+      doc.text("職務経歴書 分析レポート", leftMargin, y);
+      y += yLargeStep;
+      doc.setDrawColor(200);
+      doc.line(leftMargin, y, leftMargin + contentWidth, y);
+      y += yLargeStep;
+
+      const addSection = (title: string, content: string | string[]) => {
+        doc.setFontSize(14);
+        doc.text(title, leftMargin, y);
+        y += yStep;
+        doc.setFontSize(10);
+        if (Array.isArray(content)) {
+            content.forEach((item, index) => {
+                const itemText = `${index + 1}. ${item}`;
+                const splitItem = splitText(itemText);
+                doc.text(splitItem, leftMargin, y);
+                y += (splitItem.length * 5) + (yStep / 2);
+            });
+        } else {
+            const splitContent = splitText(content);
+            doc.text(splitContent, leftMargin, y);
+            y += (splitContent.length * 5);
+        }
+        y += yLargeStep;
+      };
+
+      addSection("職務要約", result.summary);
+      addSection("保有スキル", result.skills.join(' / '));
+      addSection("主な強み", result.strength);
+      addSection("潜在的な懸念点と面談での確認ポイント", result.potential_concerns);
+      addSection("キャリア面談質問例", result.interview_question_examples);
+      
+      // JOB提案セクション
+      doc.setFontSize(14);
+      doc.text("JOB提案", leftMargin, y);
+      y += yStep;
+      doc.setFontSize(10);
+      doc.text(`- 職種: ${result.job_suggestions.positions.join(', ')}`, leftMargin, y);
+      y += yStep;
+      doc.text(`- 企業規模/フェーズ: ${result.job_suggestions.company_scale_details.join(', ')}`, leftMargin, y);
+      y += yStep;
+      doc.text(`- 補足:`, leftMargin, y);
+      y += yStep;
+      const splitSupplementary = splitText(result.job_suggestions.supplementary_text);
+      doc.text(splitSupplementary, leftMargin + 5, y);
+
+      // --- PDFの保存 ---
       doc.save("morich-profile-scan-result.pdf");
-      console.log("PDFの保存処理を呼び出しました。");
 
     } catch (error) {
-      console.error("PDFエクスポート中に致命的なエラーが発生しました:", error);
-      alert("PDFの作成に失敗しました。詳細は開発者ツール（F12）のコンソールを確認してください。");
+      console.error("PDFエクスポート中にエラー:", error);
+      alert("PDFの作成に失敗しました。");
     }
   };
 
@@ -114,9 +130,13 @@ const AnalysisDisplay: React.FC<Props> = ({ result }) => {
       </Section>
 
       <Section title="保有スキル" icon={<SparklesIcon className="w-6 h-6" />}>
-        <ul className="list-disc list-inside space-y-1">
-          {result.skills.map((skill, index) => <li key={index}>{skill}</li>)}
-        </ul>
+        <div className="flex flex-wrap gap-2">
+          {result.skills.map((skill, index) => (
+            <span key={index} className="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">
+              {skill}
+            </span>
+          ))}
+        </div>
       </Section>
       
       <Section title="主な強み" icon={<StarIcon className="w-6 h-6" />}>
@@ -133,7 +153,29 @@ const AnalysisDisplay: React.FC<Props> = ({ result }) => {
         </ul>
       </Section>
 
-      {/* 必要であれば他の項目もここに追加 */}
+      <Section title="JOB提案" icon={<BriefcaseIcon className="w-6 h-6" />}>
+        <div className="space-y-4">
+          <div>
+            <h4 className="font-semibold text-neutral-700">マッチする職種</h4>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {result.job_suggestions.positions.map((pos, index) => (
+                <span key={index} className="bg-indigo-100 text-indigo-800 text-sm font-medium px-3 py-1 rounded-full">
+                  {pos}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h4 className="font-semibold text-neutral-700">企業規模・フェーズ等</h4>
+            <p className="whitespace-pre-wrap">{result.job_suggestions.company_scale_details.join(', ')}</p>
+          </div>
+          <div>
+            <h4 className="font-semibold text-neutral-700">補足情報</h4>
+            <p className="whitespace-pre-wrap">{result.job_suggestions.supplementary_text}</p>
+          </div>
+        </div>
+      </Section>
+
     </div>
   );
 };
