@@ -5,7 +5,7 @@ import AnalysisDisplay from './components/AnalysisDisplay';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorAlert from './components/ErrorAlert';
 import SparklesIcon from './components/icons/SparklesIcon';
-import MorichLogo from './components/icons/MorichLogo';
+import MorichLogo from './components/icons/MorichLogo.1';
 
 const App: React.FC = () => {
   const [resumeText, setResumeText] = useState<string>('');
