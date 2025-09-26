@@ -55,12 +55,13 @@ export default async function handler(
 
     const genAI = new GoogleGenerativeAI(API_KEY);
     
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash-latest", // 最新の推奨モデル
-      generationConfig: {
-        responseMimeType: "application/json",
-      },
-     });
+   const model = genAI.getGenerativeModel({
+  model: "gemini-1.5-flash", // ✅ 正しいモデル名
+  generationConfig: {
+    responseMimeType: "application/json",
+  },
+});
+
 
     const result = await model.generateContent(fullPrompt);
     const response = result.response;
