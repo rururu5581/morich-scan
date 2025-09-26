@@ -16,8 +16,8 @@ export default async function handler(
     if (!resumeText) {
       return res.status(400).json({ message: 'resumeText is required' });
     }
-    
-    // constants.tsからプロンプトを反映
+
+    // ---- プロンプト ----
     const GEMINI_PROMPT_SYSTEM_INSTRUCTION = `あなたは優秀なキャリアアドバイザーです。以下の制約条件と出力形式に従って、入力された職務経歴書テキストを分析し、要点を抽出・要約してください。
 
 # 制約条件
@@ -45,36 +45,47 @@ export default async function handler(
     "supplementary_text": "（これらの提案理由や、候補者に合う環境などの補足情報）"
   }
 }`;
-    
+
     const fullPrompt = `${GEMINI_PROMPT_SYSTEM_INSTRUCTION}\n\n# 職務経歴書テキスト\n${resumeText}`;
 
+    // ---- APIキー確認 ----
     const API_KEY = process.env.API_KEY;
     if (!API_KEY) {
       throw new Error("API_KEY is not set on the server.");
     }
 
+    // ---- Gemini クライアント ----
     const genAI = new GoogleGenerativeAI(API_KEY);
-    
-   const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash", // ✅ 正しいモデル名
-  generationConfig: {
-    responseMimeType: "application/json",
-  },
-});
 
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",  // ✅ AI Studioキーで使えるのはこれだけ
+      generationConfig: {
+        responseMimeType: "application/json", // JSONで返す指定
+      },
+    });
 
+    // ---- API呼び出し ----
     const result = await model.generateContent(fullPrompt);
     const response = result.response;
     const responseText = response.text();
-    
-    // デバッグ用にAIからの生の応答をログに出力
-    console.log("AIからの生の応答:", responseText); 
-    
-    // 成功したら、AIからの応答テキスト（JSON文字列）を返す
-    res.status(200).json({ result: responseText });
+
+    console.log("AIからの生の応答:", responseText);
+
+    // JSONパース（失敗したらそのまま返す）
+    let parsed;
+    try {
+      parsed = JSON.parse(responseText);
+    } catch {
+      parsed = responseText;
+    }
+
+    res.status(200).json({ result: parsed });
 
   } catch (error: any) {
     console.error("Error in API route:", error);
-    res.status(500).json({ message: error.message || 'An unknown server error occurred.' });
+    res.status(500).json({
+      message: error.message || 'An unknown server error occurred.',
+      details: error.response?.data || null,
+    });
   }
 }
