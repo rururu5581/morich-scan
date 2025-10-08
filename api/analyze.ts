@@ -46,9 +46,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ✅ 修正版: モデル名を最新に
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-pro-latest",
-      generationConfig: { responseMimeType: "application/json" },
-    });
+  model: "gemini-1.5-pro-latest", // ← ここを "pro" に変更（"flash" ではなく）
+  generationConfig: {
+    responseMimeType: "application/json",
+  },
+});
 
     const result = await model.generateContent(fullPrompt);
     const responseText = result.response.text();
